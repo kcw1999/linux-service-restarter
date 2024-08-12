@@ -1,0 +1,61 @@
+- hosts: localhost
+  gather_facts: yes
+  become: no
+  tasks:
+     - name: Create the Inventory
+       add_host: 
+           hostname: "{{ item | trim}}"
+           groups: lin_host
+           ansible_user: "{{ login_user }}"
+           ansible_password: "{{ login_password }}"
+           ansible_become_pass: "{{ login_password }}"
+       loop: "{{ hostnames.split('\n') }}"
+
+- hosts: all
+  become: true
+  gather_facts: true
+  vars: 
+    service_name: "{{ serv_name }}.service"
+    org_state: 'Service Not found , Have your entered correct Name?..please check'
+    user_email: "{{ mailid }}"
+    from_email: "{{ from_email | default('ansible_automation@localhost') }}"
+  pre_tasks:
+      - name: Populate service facts
+        ansible.builtin.service_facts:
+
+      - name: Original State
+        set_fact:
+           org_state: "{{ item.value.state }}"
+        when: "service_name in item.key"
+        loop: "{{ lookup('ansible.builtin.dict', ansible_facts.services) }}"
+        loop_control:
+            label: '{{ item.key }}'
+
+      - debug: 
+          var: org_state 
+        when: "'Service Not found' in org_state"
+
+  tasks: 
+      - name: Restart Block
+        block:
+          - name: Start service httpd, if not started
+            ansible.builtin.service:
+              name: "{{ service_name }}"
+              state: restarted
+        when: "'Service Not found' not in org_state"
+
+      - name: Send Restart Status over EMAIL
+        community.general.mail:
+           host: "{{ smtp_server }}"
+           port: "{{ smtp_port | default(25) }}"
+           to: "{{user_email}}"
+           subtype: html
+           from: "{{ from_email }}"
+           subject: "***Job ID: {{ tower_job_id |default('Tower Job ID was not Found')}}*** ||Service Restart Status: {{ serv_name }}||{{ inventory_hostname }}"
+           body: "{{lookup('ansible.builtin.template', 'mail_template.j2')}}"
+        delegate_to: localhost
+
+
+
+
+         
