@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Service Restart Notification</title>
+</head>
+<body>
+    <p>Hello,</p>
+
+    <p>This is a notification to inform you that the <strong>{{ serv_name }}</strong> service has been restarted or not on <strong>{{ inventory_hostname }}</strong>.</p>
+
+    <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+            <th>Service Name</th>
+            <td>{{ serv_name }}</td>
+        </tr>
+        <tr>
+            <th>Server</th>
+            <td>{{ inventory_hostname }}</td>
+        </tr>
+        <tr>
+            <th>Original State</th>
+            <td>{{ org_state }}</td>
+        </tr>
+        <tr>
+            <th>Current State</th>
+            <td>{% if 'Service Not found' not in org_state %}restarted{% else %}Service was not Found , Please recheck the Name or is it installed..{% endif %}</td>
+        </tr>
+    </table>
+
+    <p>Please contact the IT department if you have any questions.</p>
+
+    <p>Best regards,<br>Your IT Team</p>
+</body>
+</html>
